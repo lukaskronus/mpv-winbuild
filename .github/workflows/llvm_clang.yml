@@ -65,8 +65,18 @@ jobs:
       - name: Building LLVM with IR Profile Instrumentation
         if: ${{ steps.clang_root_cache.outputs.cache-matched-key == '' }}
         run: |
-          cmake -DTARGET_ARCH=x86_64-w64-mingw32 -DLLVM_ENABLE_PGO=GEN -DCOMPILER_TOOLCHAIN=clang -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/clang_root -DMINGW_INSTALL_PREFIX=$GITHUB_WORKSPACE/build_x86_64/x86_64-w64-mingw32 -DSINGLE_SOURCE_LOCATION=$GITHUB_WORKSPACE/src_packages -DRUSTUP_LOCATION=$GITHUB_WORKSPACE/clang_root/install_rustup -G Ninja -B build_x86_64 -S $GITHUB_WORKSPACE
-          ninja -C build_x86_64 llvm
+          mkdir -p $GITHUB_WORKSPACE/clang_root/profiles
+          chmod -R 777 $GITHUB_WORKSPACE/clang_root/profiles
+          cmake -DTARGET_ARCH=x86_64-w64-mingw32 -DLLVM_ENABLE_PGO=GEN \
+                -DCOMPILER_TOOLCHAIN=clang \
+                -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/clang_root \
+                -DMINGW_INSTALL_PREFIX=$GITHUB_WORKSPACE/build_x86_64/x86_64-w64-mingw32 \
+                -DSINGLE_SOURCE_LOCATION=$GITHUB_WORKSPACE/src_packages \
+                -DRUSTUP_LOCATION=$GITHUB_WORKSPACE/clang_root/install_rustup \
+                -G Ninja -B build_x86_64 -S $GITHUB_WORKSPACE
+          chmod -R +x $GITHUB_WORKSPACE/build_x86_64/exec
+          chmod -R +x $GITHUB_WORKSPACE/build_x86_64/toolchain
+          ninja -C build_x86_64 llvm || (cat build_x86_64/toolchain/llvm-prefix/src/llvm-stamp/llvm-configure-*.log && exit 1)
           ninja -C build_x86_64 rustup
           ninja -C build_x86_64 cargo-clean
 

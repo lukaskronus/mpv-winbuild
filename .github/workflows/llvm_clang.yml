@@ -19,10 +19,6 @@ jobs:
       fail-fast: false
     container:
         image: docker://ghcr.io/shinchiro/archlinux:latest
-        options: --user root --workdir /__w/mpv-winbuild/mpv-winbuild
-        env:
-          UMASK: 0002
-          HOME: /__w/mpv-winbuild/mpv-winbuild
     steps:
       - name: Setup git config
         run: |
@@ -31,11 +27,17 @@ jobs:
           git config --global pull.rebase true
           git config --global rebase.autoStash true
           git config --global fetch.prune true
-          git config --global --add safe.directory $PWD
+          git config --global --add safe.directory $GITHUB_WORKSPACE
 
       - uses: actions/checkout@main
         with:
           ref: ${{ github.ref_name }}
+
+      - name: Nuclear permission reset
+        run: |
+          sudo chown -R $(whoami):$(id -gn) $GITHUB_WORKSPACE
+          find $GITHUB_WORKSPACE -type d -exec chmod 755 {} \;
+          find $GITHUB_WORKSPACE -type f -exec chmod 644 {} \;
 
       - name: Loading clang root
         id: clang_root_cache

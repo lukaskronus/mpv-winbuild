@@ -19,6 +19,10 @@ jobs:
       fail-fast: false
     container:
         image: docker://ghcr.io/shinchiro/archlinux:latest
+        options: --user root --workdir /__w/mpv-winbuild/mpv-winbuild
+        env:
+          UMASK: 0002
+          HOME: /__w/mpv-winbuild/mpv-winbuild
     steps:
       - name: Setup git config
         run: |
@@ -62,23 +66,9 @@ jobs:
         continue-on-error: true
         run: ${{ github.event.inputs.command }}
 
-      - name: Debug pre-build environment
-        if: ${{ steps.clang_root_cache.outputs.cache-matched-key == '' }}
-        run: |
-          echo "=== Workspace Structure ==="
-          ls -la $GITHUB_WORKSPACE
-          echo "=== Disk Space ==="
-          df -h
-          echo "=== Memory Info ==="
-          free -h
-          echo "=== User Context ==="
-          whoami
-          id
-
       - name: Building LLVM with IR Profile Instrumentation
         if: ${{ steps.clang_root_cache.outputs.cache-matched-key == '' }}
         run: |
-          set -x
           cmake -DTARGET_ARCH=x86_64-w64-mingw32 -DLLVM_ENABLE_PGO=GEN \
                 -DCOMPILER_TOOLCHAIN=clang \
                 -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/clang_root \
@@ -86,35 +76,9 @@ jobs:
                 -DSINGLE_SOURCE_LOCATION=$GITHUB_WORKSPACE/src_packages \
                 -DRUSTUP_LOCATION=$GITHUB_WORKSPACE/clang_root/install_rustup \
                 -G Ninja -B build_x86_64 -S $GITHUB_WORKSPACE
-          ninja -C build_x86_64 llvm || {
-            echo "=== Build Failed ==="
-            find build_x86_64 -name "*.log" -exec echo "==== {} ====" \; -exec cat {} \;
-            exit 1
-          }
+          ninja -C build_x86_64 llvm
           ninja -C build_x86_64 rustup
           ninja -C build_x86_64 cargo-clean
-
-      - name: Debug post-build state
-        if: ${{ always() && steps.clang_root_cache.outputs.cache-matched-key == '' }}
-        run: |
-          echo "=== Build Directory Contents ==="
-          ls -la $GITHUB_WORKSPACE/build_x86_64
-          echo "=== exec File Status ==="
-          stat $GITHUB_WORKSPACE/build_x86_64/exec || true
-
-      #- name: Building LLVM with IR Profile Instrumentation
-      #  if: ${{ steps.clang_root_cache.outputs.cache-matched-key == '' }}
-      #  run: |
-      #    cmake -DTARGET_ARCH=x86_64-w64-mingw32 -DLLVM_ENABLE_PGO=GEN \
-      #          -DCOMPILER_TOOLCHAIN=clang \
-      #          -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/clang_root \
-      #          -DMINGW_INSTALL_PREFIX=$GITHUB_WORKSPACE/build_x86_64/x86_64-w64-mingw32 \
-      #          -DSINGLE_SOURCE_LOCATION=$GITHUB_WORKSPACE/src_packages \
-      #          -DRUSTUP_LOCATION=$GITHUB_WORKSPACE/clang_root/install_rustup \
-      #          -G Ninja -B build_x86_64 -S $GITHUB_WORKSPACE
-      #    ninja -C build_x86_64 llvm
-      #    ninja -C build_x86_64 rustup
-      #    ninja -C build_x86_64 cargo-clean
 
       - name: Building x86_64 toolchain
         if: ${{ steps.x86_64_cache.outputs.cache-matched-key == '' }}

@@ -161,7 +161,6 @@ jobs:
           {
             "ref": "${{ github.ref_name }}",
             "inputs": {
-              "sourceforge": "false",
               "github_release": "false",
               "mpv_tarball": "false"
             }

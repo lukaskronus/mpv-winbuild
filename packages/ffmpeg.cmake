@@ -122,5 +122,14 @@ ExternalProject_Add(ffmpeg
     LOG_DOWNLOAD 1 LOG_UPDATE 1 LOG_CONFIGURE 1 LOG_BUILD 1 LOG_INSTALL 1
 )
 
+# Add patch application step
+ExternalProject_Add_Step(ffmpeg apply_patch
+    COMMAND git apply ${CMAKE_CURRENT_SOURCE_DIR}/../patches/ffmpeg-Add-max_requested_size-option.patch
+    WORKING_DIRECTORY ${SOURCE_LOCATION}
+    DEPENDEES download
+    DEPENDERS configure
+    LOG 1
+)
+
 force_rebuild_git(ffmpeg)
 cleanup(ffmpeg install)

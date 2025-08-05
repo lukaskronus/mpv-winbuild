@@ -59,6 +59,15 @@ ExternalProject_Add(mpv
     LOG_DOWNLOAD 1 LOG_UPDATE 1 LOG_CONFIGURE 1 LOG_BUILD 1 LOG_INSTALL 1
 )
 
+# Add patch application step for MPV PR #15612
+ExternalProject_Add_Step(mpv apply_patch
+    COMMAND git apply ${CMAKE_CURRENT_SOURCE_DIR}/../patches/mpv-pr-15612.patch
+    WORKING_DIRECTORY ${SOURCE_LOCATION}
+    DEPENDEES download
+    DEPENDERS configure
+    LOG 1
+)
+
 ExternalProject_Add_Step(mpv strip-binary
     DEPENDEES build
     ${mpv_add_debuglink}

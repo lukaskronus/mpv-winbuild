@@ -4,6 +4,8 @@ defaults:
     shell: bash
 
 on:
+  schedule:
+    - cron: '0 23 * * *'
   workflow_dispatch:
     inputs:
       command:
@@ -13,7 +15,7 @@ on:
       github_release:
         description: 'Upload to Github release'
         required: false
-        default: false
+        default: true
         type: boolean
       mpv_tarball:
         description: 'Build latest mpv tarball'

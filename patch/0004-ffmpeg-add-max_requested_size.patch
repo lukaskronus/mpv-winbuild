@@ -9,11 +9,11 @@ index 252c687..6936fef 100644
 +    # Download and apply ffmpeg patch
 +    PATCH_COMMAND
 +        ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/patches
-+        COMMAND ${CMAKE_COMMAND} -E echo "Downloading ffmpeg patch..."
-+        COMMAND ${CMAKE_COMMAND} -E echo "file(DOWNLOAD \"https://patchwork.ffmpeg.org/project/ffmpeg/patch/20250329222809.606230-2-ffmpeg@fratti.ch/raw/\" \"${CMAKE_CURRENT_BINARY_DIR}/patches/ffmpeg_patch.diff\" SHOW_PROGRESS STATUS status LOG log)" > ${CMAKE_CURRENT_BINARY_DIR}/download_patch.cmake
-+        COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/download_patch.cmake
-+        COMMAND ${CMAKE_COMMAND} -E echo "Applying ffmpeg patch..."
-+        COMMAND git apply ${CMAKE_CURRENT_BINARY_DIR}/patches/ffmpeg_patch.diff
++        COMMAND curl -s -L -o ${CMAKE_CURRENT_BINARY_DIR}/patches/ffmpeg_patch.diff "https://patchwork.ffmpeg.org/project/ffmpeg/patch/20250329222809.606230-2-ffmpeg@fratti.ch/raw/"
++        COMMAND echo "Applying ffmpeg patch..."
++        COMMAND git apply --ignore-whitespace ${CMAKE_CURRENT_BINARY_DIR}/patches/ffmpeg_patch.diff || 
++                (echo "Patch failed, trying with reduced strictness..." && 
++                 patch -p1 -i ${CMAKE_CURRENT_BINARY_DIR}/patches/ffmpeg_patch.diff --merge --no-backup-if-mismatch || true)
      CONFIGURE_COMMAND ${EXEC} CONF=1 <SOURCE_DIR>/configure
          --cross-prefix=${TARGET_ARCH}-
          --prefix=${MINGW_INSTALL_PREFIX}

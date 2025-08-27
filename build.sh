@@ -1,6 +1,5 @@
 #!/bin/bash
 set -x
-MPV_PACKAGING_DIR="mpv-packaging"  # Generic name for the packaging directory
 
 main() {
     gitdir=$(pwd)
@@ -10,6 +9,7 @@ main() {
     local target=$1
     compiler=$2
     simple_package=$3
+
     prepare
     if [ "$target" == "32" ]; then
         package "32" 
@@ -29,8 +29,9 @@ main() {
         package "64-v3"
         package "aarch64"
     fi
-    rm -rf ./release/$MPV_PACKAGING_DIR
+    rm -rf ./release/mpv-packaging-main
 }
+
 package() {
     local bit=$1
     if [ $bit == "32" ]; then
@@ -44,11 +45,13 @@ package() {
     elif [ $bit == "aarch64" ]; then
         local arch="aarch64"
     fi
+
     build $bit $arch $gcc_arch
     zip $bit $arch $x86_64_level
     sudo rm -rf $buildroot/build$bit/mpv-*
     sudo chmod -R a+rwx $buildroot/build$bit
 }
+
 build() {
     local bit=$1
     local arch=$2
@@ -58,16 +61,20 @@ build() {
         clang_option=(-DCMAKE_INSTALL_PREFIX=$clang_root -DMINGW_INSTALL_PREFIX=$buildroot/build$bit/install/$arch-w64-mingw32 -DCLANG_PACKAGES_LTO=ON)
     fi
     cmake -Wno-dev --fresh -DTARGET_ARCH=$arch-w64-mingw32 $gcc_arch -DCOMPILER_TOOLCHAIN=$compiler "${clang_option[@]}" $extra_option -DENABLE_CCACHE=ON -DSINGLE_SOURCE_LOCATION=$srcdir -G Ninja -H$gitdir -B$buildroot/build$bit
+
     ninja -C $buildroot/build$bit download || true
+
     if [ "$compiler" == "gcc" ] && [ ! -f "$buildroot/build$bit/install/bin/cross-gcc" ]; then
         ninja -C $buildroot/build$bit gcc && rm -rf $buildroot/build$bit/toolchain
     elif [ "$compiler" == "clang" ] && [ ! "$(ls -A $clang_root/bin/clang)" ]; then
         ninja -C $buildroot/build$bit llvm && ninja -C $buildroot/build$bit llvm-clang
     fi
+
     ninja -C $buildroot/build$bit update
     ninja -C $buildroot/build$bit mpv-fullclean
     
     ninja -C $buildroot/build$bit mpv
+
     if [ -n "$(find $buildroot/build$bit -maxdepth 1 -type d -name "mpv*$arch*" -print -quit)" ] ; then
         echo "Successfully compiled $bit-bit. Continue"
     else
@@ -75,13 +82,15 @@ build() {
         exit 1
     fi
 }
+
 zip() {
     local bit=$1
     local arch=$2
     local x86_64_level=$3
+
     mv $buildroot/build$bit/mpv-* $gitdir/release
     if [ "$simple_package" != "true" ]; then
-        cd $gitdir/release/$MPV_PACKAGING_DIR
+        cd $gitdir/release/mpv-packaging-main
         cp -r ./mpv-root/* ../mpv-$arch$x86_64_level*
     fi
     cd $gitdir/release
@@ -93,6 +102,7 @@ zip() {
     done
     cd ..
 }
+
 download_mpv_package() {
     local package_url="https://gitlab.com/kobahirose/mpv-packaging/-/archive/main/mpv-packaging-main.zip"
     if [ -e mpv-packaging.zip ]; then
@@ -107,25 +117,18 @@ download_mpv_package() {
     fi
     unzip -o mpv-packaging.zip
 }
+
 prepare() {
     mkdir -p ./release
     if [ "$simple_package" != "true" ]; then
         cd ./release
         download_mpv_package
-        # Remove existing packaging directory if it exists
-        if [ -d "$MPV_PACKAGING_DIR" ]; then
-            rm -rf "$MPV_PACKAGING_DIR"
-        fi
-        # Find and rename the unpacked directory
-        unpacked_dir=$(find . -maxdepth 1 -type d -name "mpv-packaging-*" | head -n 1)
-        if [ -n "$unpacked_dir" ]; then
-            mv "$unpacked_dir" "$MPV_PACKAGING_DIR"
-        fi
-        cd ./$MPV_PACKAGING_DIR
+        cd ./mpv-packaging-main
         7z x -y ./d3dcompiler*.7z
         cd ../..
     fi
 }
+
 while getopts t:c:s:e: flag
 do
     case "${flag}" in
@@ -135,4 +138,5 @@ do
         e) extra_option=${OPTARG};;
     esac
 done
+
 main "${target:-all-64}" "${compiler:-gcc}" "${simple_package:-false}"

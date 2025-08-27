@@ -384,15 +384,11 @@ jobs:
         run: |
           chmod +x build.sh
           cd mpv-winbuild-cmake
-          if [[ "$(ls -A ../patch/*.patch 2>/dev/null)" ]]; then
-                for patch in ../patch/*.patch; do
-                  echo "Applying patch: $patch"
-                  git apply --check "$patch" && git apply "$patch" || {
-                    echo "Failed to apply $patch with git apply, trying with patch command..."
-                    patch -p1 < "$patch" || echo "Failed to apply $patch with patch command as well"
-                  }
-                done
-              fi
+          if [[ "$(ls -A ../patch/*.patch)" ]]; then
+            for patch in ../patch/*.patch ; do
+              git am --3way "$patch" || git am --abort
+            done
+          fi
           if [ "${{ matrix.lgpl }}" = "true" ]; then
             git am --3way ../compile-lgpl-libmpv.patch
           fi

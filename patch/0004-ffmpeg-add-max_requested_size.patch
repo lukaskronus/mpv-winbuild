@@ -1,3 +1,23 @@
+From: John Doe <johndoe@example.com>
+Date: Wed, 27 Aug 2025 19:18:00 +0700
+Subject: [FFmpeg-devel] [PATCH v2] avformat/http: Add max_requested_size option
+
+From https://patchwork.ffmpeg.org/project/ffmpeg/patch/20250329222809.606230-2-ffmpeg@fratti.ch/
+
+In some cases, webservers may return content more quickly if one sends many
+small requests rather than one big request. Clients may wish to opt-in to this
+workaround.
+
+For this purpose, add a max_requested_size AVOption, which returns EOF if
+max_requested_size is exceeded, causing a new request with an offset to be
+issued.
+
+In particular, this hack is useful for mpv, where it can be used to bypass
+YouTube's throttling.
+
+Signed-off-by: Nicolas Frattaroli <ffmpeg@fratti.ch>
+
+---
 diff --git a/packages/ffmpeg.cmake b/packages/ffmpeg.cmake
 index 252c687..6936fef 100644
 --- a/packages/ffmpeg.cmake
@@ -15,3 +35,4 @@ index 252c687..6936fef 100644
      CONFIGURE_COMMAND ${EXEC} CONF=1 <SOURCE_DIR>/configure
          --cross-prefix=${TARGET_ARCH}-
          --prefix=${MINGW_INSTALL_PREFIX}
+---

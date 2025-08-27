@@ -1,3 +1,22 @@
+From: John Doe <johndoe@gmail.com>
+Subject: [PATCH] ytdl_hook: use the new max_requested_size AVOption if needed
+Date: Wed, 27 Aug 2025 19:18:00 +0700
+
+From https://github.com/mpv-player/mpv/pull/15612
+
+Some sites throttle requests, but throttling can be avoided with
+many small range requests. yt-dlp implements a "http_chunk_size"
+key in its -J output to inform us of the ideal size.
+
+With the appropriate[1] FFmpeg addition, we can properly implement
+this now, which greatly speeds up how fast YouTube videos get loaded
+into the cache by mpv.
+
+Should the FFmpeg that mpv is built against lack the max_requested_size
+AVOption, then this will silently not do anything new, so no version checks are
+needed.
+
+---
 diff --git a/packages/mpv.cmake b/packages/mpv.cmake
 index 874ee95..fc68e07 100644
 --- a/packages/mpv.cmake
@@ -17,3 +36,4 @@ index 874ee95..fc68e07 100644
      CONFIGURE_COMMAND ${EXEC} CONF=1 meson setup <BINARY_DIR> <SOURCE_DIR>
          --prefix=${MINGW_INSTALL_PREFIX}
          --libdir=${MINGW_INSTALL_PREFIX}/lib
+---

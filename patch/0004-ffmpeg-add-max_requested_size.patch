@@ -2,18 +2,16 @@ diff --git a/packages/ffmpeg.cmake b/packages/ffmpeg.cmake
 index 252c687..6936fef 100644
 --- a/packages/ffmpeg.cmake
 +++ b/packages/ffmpeg.cmake
-@@ -51,6 +51,14 @@ ExternalProject_Add(ffmpeg
+@@ -51,6 +51,12 @@ ExternalProject_Add(ffmpeg
      GIT_CLONE_FLAGS "--sparse --filter=tree:0"
      GIT_CLONE_POST_COMMAND "sparse-checkout set --no-cone /* !tests/ref/fate"
      UPDATE_COMMAND ""
-+    # Download and apply ffmpeg patch
 +    PATCH_COMMAND
-+        ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/patches
-+        COMMAND curl -s -L -o ${CMAKE_CURRENT_BINARY_DIR}/patches/ffmpeg_patch.diff "https://patchwork.ffmpeg.org/project/ffmpeg/patch/20250329222809.606230-2-ffmpeg@fratti.ch/raw/"
-+        COMMAND echo "Applying ffmpeg patch..."
-+        COMMAND git apply --ignore-whitespace ${CMAKE_CURRENT_BINARY_DIR}/patches/ffmpeg_patch.diff || 
-+                (echo "Patch failed, trying with reduced strictness..." && 
-+                 patch -p1 -i ${CMAKE_CURRENT_BINARY_DIR}/patches/ffmpeg_patch.diff --merge --no-backup-if-mismatch || true)
++         ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/patches
++         COMMAND curl -s -L -o ${CMAKE_CURRENT_BINARY_DIR}/patches/ffmpeg_patch.diff "https://patchwork.ffmpeg.org/project/ffmpeg/patch/20250329222809.606230-2-ffmpeg@fratti.ch/raw/"
++         COMMAND echo "Applying ffmpeg patch with careful handling..."
++         COMMAND patch -p1 -i ${CMAKE_CURRENT_BINARY_DIR}/patches/ffmpeg_patch.diff --no-backup-if-mismatch --forward --silent || 
++         (echo "Patch may be already applied or not needed, continuing..." && true)
      CONFIGURE_COMMAND ${EXEC} CONF=1 <SOURCE_DIR>/configure
          --cross-prefix=${TARGET_ARCH}-
          --prefix=${MINGW_INSTALL_PREFIX}

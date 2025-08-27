@@ -384,8 +384,8 @@ jobs:
         run: |
           chmod +x build.sh
           cd mpv-winbuild-cmake
-          if [[ "$(ls -A ../patch/*.patch ../patch/*.patch.txt 2>/dev/null)" ]]; then
-                for patch in ../patch/*.patch ../patch/*.patch.txt; do
+          if [[ "$(ls -A ../patch/*.patch 2>/dev/null)" ]]; then
+                for patch in ../patch/*.patch; do
                   echo "Applying patch: $patch"
                   git apply --check "$patch" && git apply "$patch" || {
                     echo "Failed to apply $patch with git apply, trying with patch command..."

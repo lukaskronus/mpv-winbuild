@@ -33,11 +33,6 @@ on:
         options:
         - gcc
         - clang
-      ffmpeg_patches:
-        description: "Apply FFmpeg patches (true/false)"
-        required: false
-        default: false
-        type: boolean
       needclean:
         description: 'Build without cache'
         required: false
@@ -343,40 +338,7 @@ jobs:
               done
             fi
           done
-      - name: Apply FFmpeg patches
-        if: ${{ inputs.ffmpeg_patches == true }}
-        run: |
-          echo "Applying FFmpeg patches..."
-          cd mpv-winbuild-cmake/src_packages/ffmpeg
-          
-          # Check if ffmpeg_patches directory exists and has patches
-          if [[ -d "../../../../ffmpeg_patches" ]]; then
-            echo "Looking for FFmpeg patches in ffmpeg_patches/"
-            for patch in ../../../../ffmpeg_patches/*.patch; do
-              if [[ -f "$patch" ]]; then
-                echo "Applying FFmpeg patch: $(basename "$patch")"
-                # Try git apply first, then patch command as fallback
-                git apply "$patch" || \
-                patch -p1 --no-backup-if-mismatch < "$patch" || \
-                echo "Warning: Failed to apply patch $(basename "$patch")"
-              fi
-            done
-          else
-            echo "No ffmpeg_patches directory found"
-          fi
-          
-          # Also check for patches in the root ffmpeg_patches directory (for backward compatibility)
-          if [[ -d "../../../ffmpeg_patches" ]]; then
-            echo "Looking for FFmpeg patches in ../ffmpeg_patches/"
-            for patch in ../../../ffmpeg_patches/*.patch; do
-              if [[ -f "$patch" ]]; then
-                echo "Applying FFmpeg patch: $(basename "$patch")"
-                git apply "$patch" || \
-                patch -p1 --no-backup-if-mismatch < "$patch" || \
-                echo "Warning: Failed to apply patch $(basename "$patch")"
-              fi
-            done
-          fi
+
       - name: Running custom command
         if: ${{ inputs.command != '' }}
         shell: bash

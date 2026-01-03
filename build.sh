@@ -29,7 +29,7 @@ main() {
         package "64-v3"
         package "aarch64"
     fi
-    rm -rf ./release/mpv-packaging-main
+    rm -rf ./release/mpv-packaging-master
 }
 
 package() {
@@ -60,7 +60,7 @@ build() {
     if [ "$compiler" == "clang" ]; then
         clang_option=(-DCMAKE_INSTALL_PREFIX=$clang_root -DMINGW_INSTALL_PREFIX=$buildroot/build$bit/install/$arch-w64-mingw32 -DCLANG_PACKAGES_LTO=ON)
     fi
-    cmake -Wno-dev --fresh -DTARGET_ARCH=$arch-w64-mingw32 $gcc_arch -DCOMPILER_TOOLCHAIN=$compiler "${clang_option[@]}" $extra_option -DENABLE_CCACHE=ON -DSINGLE_SOURCE_LOCATION=$srcdir -G Ninja -H$gitdir -B$buildroot/build$bit
+    cmake -Wno-dev --fresh -DTARGET_ARCH=$arch-w64-mingw32 $gcc_arch -DCOMPILER_TOOLCHAIN=$compiler "${clang_option[@]}" $extra_option -DENABLE_CCACHE=ON -DSINGLE_SOURCE_LOCATION=$srcdir -DRUSTUP_LOCATION=$buildroot/install_rustup -G Ninja -H$gitdir -B$buildroot/build$bit
 
     ninja -C $buildroot/build$bit download || true
 
@@ -70,6 +70,10 @@ build() {
         ninja -C $buildroot/build$bit llvm && ninja -C $buildroot/build$bit llvm-clang
     fi
 
+    if [[ ! "$(ls -A $buildroot/install_rustup/.cargo/bin)" ]]; then
+        ninja -C $buildroot/build$bit rustup-fullclean
+        ninja -C $buildroot/build$bit rustup
+    fi
     ninja -C $buildroot/build$bit update
     ninja -C $buildroot/build$bit mpv-fullclean
     
@@ -81,6 +85,8 @@ build() {
         echo "Failed compiled $bit-bit. Stop"
         exit 1
     fi
+    
+    ninja -C $buildroot/build$bit cargo-clean
 }
 
 zip() {
@@ -90,7 +96,7 @@ zip() {
 
     mv $buildroot/build$bit/mpv-* $gitdir/release
     if [ "$simple_package" != "true" ]; then
-        cd $gitdir/release/mpv-packaging-main
+        cd $gitdir/release/mpv-packaging-master
         cp -r ./mpv-root/* ../mpv-$arch$x86_64_level*
     fi
     cd $gitdir/release
@@ -104,10 +110,10 @@ zip() {
 }
 
 download_mpv_package() {
-    local package_url="https://gitlab.com/kobahirose/mpv-packaging/-/archive/main/mpv-packaging-main.zip"
+    local package_url="https://codeload.github.com/zhongfly/mpv-packaging/zip/master"
     if [ -e mpv-packaging.zip ]; then
         echo "Package exists. Check if it is newer.."
-        remote_commit=$(git ls-remote https://gitlab.com/kobahirose/mpv-packaging.git main | awk '{print $1;}')
+        remote_commit=$(git ls-remote https://github.com/zhongfly/mpv-packaging.git master | awk '{print $1;}')
         local_commit=$(unzip -z mpv-packaging.zip | tail +2)
         if [ "$remote_commit" != "$local_commit" ]; then
             wget -qO mpv-packaging.zip $package_url
@@ -123,8 +129,7 @@ prepare() {
     if [ "$simple_package" != "true" ]; then
         cd ./release
         download_mpv_package
-        cd ./mpv-packaging-main
-        7z x -y ./d3dcompiler*.7z
+        cd ./mpv-packaging-master
         cd ../..
     fi
 }

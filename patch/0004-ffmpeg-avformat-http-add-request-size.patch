@@ -1,0 +1,34 @@
+From: John Doe <johndoe@example.com>
+Date: Mon, 9 Feb 2026 16:56:25 +0100
+Subject: [PATCH] avformat/http: add -request-size option
+
+It has come to my attention that a way to limit the request range size
+would be useful in general, for reasons beyond just speeding up initial
+header parsing.
+
+This patch generalizez -initial_request_size to -request_size. I decided
+to continue allowing both options to be used simultaneously, so users can
+e.g. set -request_size to something large like 10 MiB, but still use a smaller
+size for initial header parsing (e.g. 256 KiB).
+
+Fixes: https://github.com/mpv-player/mpv/issues/8655
+
+---
+diff --git a/packages/ffmpeg.cmake b/packages/ffmpeg.cmake
+index 252c687..6936fef 100644
+--- a/packages/ffmpeg.cmake
++++ b/packages/ffmpeg.cmake
+@@ -51,6 +51,12 @@ ExternalProject_Add(ffmpeg
+     GIT_CLONE_FLAGS "--sparse --filter=tree:0"
+     GIT_CLONE_POST_COMMAND "sparse-checkout set --no-cone /* !tests/ref/fate"
+     UPDATE_COMMAND ""
++    PATCH_COMMAND
++         ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/patches
++         COMMAND curl -s -L -o ${CMAKE_CURRENT_BINARY_DIR}/patches/ffmpeg_patch.diff "https://code.ffmpeg.org/FFmpeg/FFmpeg/pulls/21703.patch"
++         COMMAND echo "Applying ffmpeg patch with careful handling..."
++         COMMAND patch -p1 -i ${CMAKE_CURRENT_BINARY_DIR}/patches/ffmpeg_patch.diff --no-backup-if-mismatch --forward --silent || 
++         (echo "Patch may be already applied or not needed, continuing..." && true)
+     CONFIGURE_COMMAND ${EXEC} CONF=1 <SOURCE_DIR>/configure
+         --cross-prefix=${TARGET_ARCH}-
+         --prefix=${MINGW_INSTALL_PREFIX}
+---

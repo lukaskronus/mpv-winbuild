@@ -29,7 +29,7 @@ main() {
         package "64-v3"
         package "aarch64"
     fi
-    rm -rf ./release/mpv-packaging-master
+    rm -rf ./release/mpv-packaging-main
 }
 
 package() {
@@ -96,7 +96,7 @@ zip() {
 
     mv $buildroot/build$bit/mpv-* $gitdir/release
     if [ "$simple_package" != "true" ]; then
-        cd $gitdir/release/mpv-packaging-master
+        cd $gitdir/release/mpv-packaging-main
         cp -r ./mpv-root/* ../mpv-$arch$x86_64_level*
     fi
     cd $gitdir/release
@@ -110,10 +110,10 @@ zip() {
 }
 
 download_mpv_package() {
-    local package_url="https://codeload.github.com/zhongfly/mpv-packaging/zip/master"
+    local package_url="https://gitlab.com/kobahirose/mpv-packaging/-/archive/main/mpv-packaging-main.zip"
     if [ -e mpv-packaging.zip ]; then
         echo "Package exists. Check if it is newer.."
-        remote_commit=$(git ls-remote https://github.com/zhongfly/mpv-packaging.git master | awk '{print $1;}')
+        remote_commit=$(git ls-remote https://gitlab.com/kobahirose/mpv-packaging.git main | awk '{print $1;}')
         local_commit=$(unzip -z mpv-packaging.zip | tail +2)
         if [ "$remote_commit" != "$local_commit" ]; then
             wget -qO mpv-packaging.zip $package_url
@@ -129,7 +129,7 @@ prepare() {
     if [ "$simple_package" != "true" ]; then
         cd ./release
         download_mpv_package
-        cd ./mpv-packaging-master
+        cd ./mpv-packaging-main
         cd ../..
     fi
 }
